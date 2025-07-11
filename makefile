@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c23 -D_GNU_SOURCE
 LDFLAGS = -lreadline -lncurses
-TARGET = sysutil.bin
+TARGET = alpinesysutil.bin
 SRC = main.c
 
 all: $(TARGET)
