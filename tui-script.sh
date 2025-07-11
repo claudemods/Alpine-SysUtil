@@ -1,8 +1,8 @@
-#!/bin/ash
+#!/bin/sh
 
 COLOR_RED="\033[31m"
 COLOR_GOLD="\033[33m"
-COLOR_CYAN="\033[36m"  # Simplified cyan since ash doesn't support 256-color
+COLOR_CYAN="\033[36m"
 COLOR_RESET="\033[0m"
 
 print_banner() {
@@ -39,7 +39,7 @@ get_key() {
     key=$(dd bs=1 count=1 2>/dev/null)
     stty "$old_settings"
     
-    if [ "$key" = $(printf "\033") ]; then
+    if [ "$key" = "$(printf "\033")" ]; then
         old_settings=$(stty -g)
         stty -icanon -echo min 1 time 0
         key=$(dd bs=1 count=1 2>/dev/null)
@@ -55,19 +55,18 @@ get_key() {
 }
 
 main() {
-    commands="
-Fix 'failed to synchronize all databases' for apk
-Fix 'unable to lock database' for apk
-Fix clock time
-Fix connectivity issues
-Fix corrupted packages
-Fix login issues
-See system logs
-Update system
-Quit"
+    # Define menu items as separate variables
+    cmd1="Fix 'failed to synchronize all databases' for apk"
+    cmd2="Fix 'unable to lock database' for apk"
+    cmd3="Fix clock time"
+    cmd4="Fix connectivity issues"
+    cmd5="Fix corrupted packages"
+    cmd6="Fix login issues"
+    cmd7="See system logs"
+    cmd8="Update system"
+    cmd9="Quit"
     
     selected=1
-    num_commands=$(printf "%s" "$commands" | wc -l)
     
     print_banner
     
@@ -85,8 +84,10 @@ Quit"
         printf "${COLOR_CYAN}  Fix Alpine Linux\n"
         printf "  --------------\n${COLOR_RESET}"
         
+        # Display menu items
         i=1
-        printf "%s" "$commands" | while IFS= read -r cmd; do
+        while [ $i -le 9 ]; do
+            eval "cmd=\"\$cmd$i\""
             if [ $i -eq $selected ]; then
                 printf "${COLOR_GOLD}\033[1m➤ %s\033[0m\n\n${COLOR_RESET}" "$cmd"
             else
@@ -104,12 +105,12 @@ Quit"
                 fi
                 ;;
             B)  # Down arrow
-                if [ $selected -lt $num_commands ]; then
+                if [ $selected -lt 9 ]; then
                     selected=$((selected+1))
                 fi
                 ;;
             "")  # Enter key
-                cmd=$(printf "%s" "$commands" | sed -n "${selected}p")
+                eval "cmd=\"\$cmd$selected\""
                 
                 case "$cmd" in
                     "Quit")
