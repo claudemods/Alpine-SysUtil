@@ -2,146 +2,149 @@
 
 COLOR_RED="\033[31m"
 COLOR_GOLD="\033[33m"
-COLOR_CYAN="\033[38;2;36;255;255m" # #24ffff
+COLOR_CYAN="\033[36m"  # Simplified cyan since ash doesn't support 256-color
 COLOR_RESET="\033[0m"
-MAX_CMD_LEN=2048
 
 print_banner() {
-    echo -e "$COLOR_GOLD"
-    echo "░█████╗░██╗░░░░░░█████╗░██╗░░░██╗██████╗░███████╗███╗░░░███╗░█████╗░██████╗░░██████╗"
-    echo "██╔══██╗██║░░░░░██╔══██╗██║░░░██║██╔══██╗██╔════╝████╗░████║██╔══██╗██╔══██╗██╔════╝"
-    echo "██║░░╚═╝██║░░░░░███████║██║░░░██║██║░░██║█████╗░░██╔████╔██║██║░░██║██║░░██║╚█████╗░"
-    echo "██║░░██╗██║░░░░░██╔══██║██║░░░██║██║░░██║██╔══╝░░██║╚██╔╝██║██║░░██║██║░░██║░╚═══██╗"
-    echo "╚█████╔╝███████╗██║░░██║╚██████╔╝██████╔╝███████╗██║░╚═╝░██║╚█████╔╝██████╔╝██████╔╝"
-    echo "░╚════╝░╚══════╝╚═╝░░░░░░╚═════╝░╚═════╝░╚══════╝╚═╝░░░░░╚═╝░╚════╝░╚════╝░╚════╝░"
-    echo -e "$COLOR_RESET"
-    echo -e "$COLOR_CYAN claudemods Alpine Sysutil v1.0\n\n$COLOR_RESET"
+    printf "${COLOR_GOLD}"
+    printf "░█████╗░██╗░░░░░░█████╗░██╗░░░██╗██████╗░███████╗███╗░░░███╗░█████╗░██████╗░░██████╗\n"
+    printf "██╔══██╗██║░░░░░██╔══██╗██║░░░██║██╔══██╗██╔════╝████╗░████║██╔══██╗██╔══██╗██╔════╝\n"
+    printf "██║░░╚═╝██║░░░░░███████║██║░░░██║██║░░██║█████╗░░██╔████╔██║██║░░██║██║░░██║╚█████╗░\n"
+    printf "██║░░██╗██║░░░░░██╔══██║██║░░░██║██║░░██║██╔══╝░░██║╚██╔╝██║██║░░██║██║░░██║░╚═══██╗\n"
+    printf "╚█████╔╝███████╗██║░░██║╚██████╔╝██████╔╝███████╗██║░╚═╝░██║╚█████╔╝██████╔╝██████╔╝\n"
+    printf "░╚════╝░╚══════╝╚═╝░░░░░░╚═════╝░╚═════╝░╚══════╝╚═╝░░░░░╚═╝░╚════╝░╚════╝░╚════╝░\n"
+    printf "${COLOR_RESET}"
+    printf "${COLOR_CYAN}claudemods Alpine Sysutil v1.0\n\n${COLOR_RESET}"
 }
 
 execute_command() {
-    local command="$1"
-    echo -ne "$COLOR_CYAN [EXECUTING] $COLOR_RESET"
+    printf "${COLOR_CYAN}[EXECUTING] ${COLOR_RESET}"
     
-    eval "$command"
-    local status=$?
+    eval "$1"
+    status=$?
     
     if [ $status -ne 0 ]; then
-        echo -e "$COLOR_RED\n[ERROR] Command failed with status $status$COLOR_RESET"
+        printf "${COLOR_RED}\n[ERROR] Command failed with status $status${COLOR_RESET}\n"
     else
-        echo -e "$COLOR_CYAN\n[SUCCESS] Command completed$COLOR_RESET"
+        printf "${COLOR_CYAN}\n[SUCCESS] Command completed${COLOR_RESET}\n"
     fi
     
-    echo -e "\nPress Enter to continue..."
-    read -r
+    printf "\nPress Enter to continue..."
+    read -r dummy
 }
 
 get_key() {
-    local c
-    read -rsn1 c
-    if [ "$c" = $'\033' ]; then
-        read -rsn2 c
+    old_settings=$(stty -g)
+    stty -icanon -echo min 1 time 0
+    key=$(dd bs=1 count=1 2>/dev/null)
+    stty "$old_settings"
+    
+    if [ "$key" = $(printf "\033") ]; then
+        old_settings=$(stty -g)
+        stty -icanon -echo min 1 time 0
+        key=$(dd bs=1 count=1 2>/dev/null)
+        stty "$old_settings"
+        if [ "$key" = "[" ]; then
+            old_settings=$(stty -g)
+            stty -icanon -echo min 1 time 0
+            key=$(dd bs=1 count=1 2>/dev/null)
+            stty "$old_settings"
+        fi
     fi
-    echo "$c"
+    printf "$key"
 }
 
 main() {
-    local root_password
-    local selected=0
-    local commands=(
-        "Fix 'failed to synchronize all databases' for apk"
-        "Fix 'unable to lock database' for apk"
-        "Fix clock time"
-        "Fix connectivity issues"
-        "Fix corrupted packages"
-        "Fix login issues"
-        "See system logs"
-        "Update system"
-        "Quit"
-    )
-    local num_commands=${#commands[@]}
-
-    # Save terminal settings
-    local oldt
-    oldt=$(stty -g)
-    stty -icanon -echo
-
+    commands="
+Fix 'failed to synchronize all databases' for apk
+Fix 'unable to lock database' for apk
+Fix clock time
+Fix connectivity issues
+Fix corrupted packages
+Fix login issues
+See system logs
+Update system
+Quit"
+    
+    selected=1
+    num_commands=$(printf "%s" "$commands" | wc -l)
+    
     print_banner
-
-    # Get root password
-    echo -ne "$COLOR_CYAN Password: $COLOR_RESET"
+    
+    printf "${COLOR_CYAN}Password: ${COLOR_RESET}"
+    old_settings=$(stty -g)
     stty -echo
     read -r root_password
-    stty echo
-    echo -e "\n"
-
+    stty "$old_settings"
+    printf "\n"
+    
     while true; do
         clear
         print_banner
-
-        echo -e "$COLOR_CYAN  Fix Alpine Linux"
-        echo -e "  --------------$COLOR_RESET"
-
-        for ((i=0; i<num_commands; i++)); do
+        
+        printf "${COLOR_CYAN}  Fix Alpine Linux\n"
+        printf "  --------------\n${COLOR_RESET}"
+        
+        i=1
+        printf "%s" "$commands" | while IFS= read -r cmd; do
             if [ $i -eq $selected ]; then
-                echo -e "$COLOR_GOLD\033[1m➤ ${commands[$i]}\033[0m\n$COLOR_RESET"
+                printf "${COLOR_GOLD}\033[1m➤ %s\033[0m\n\n${COLOR_RESET}" "$cmd"
             else
-                echo -e "$COLOR_CYAN  ${commands[$i]}\n$COLOR_RESET"
+                printf "${COLOR_CYAN}  %s\n\n${COLOR_RESET}" "$cmd"
             fi
+            i=$((i+1))
         done
-
-        local c=$(get_key)
-
-        case $c in
-            'A') # Up arrow
-                if [ $selected -gt 0 ]; then
-                    ((selected--))
+        
+        key=$(get_key)
+        
+        case $key in
+            A)  # Up arrow
+                if [ $selected -gt 1 ]; then
+                    selected=$((selected-1))
                 fi
                 ;;
-            'B') # Down arrow
-                if [ $selected -lt $((num_commands - 1)) ]; then
-                    ((selected++))
+            B)  # Down arrow
+                if [ $selected -lt $num_commands ]; then
+                    selected=$((selected+1))
                 fi
                 ;;
-            $'\n')
-                local command="echo '$root_password' | su -c '"
-
-                case "${commands[$selected]}" in
+            "")  # Enter key
+                cmd=$(printf "%s" "$commands" | sed -n "${selected}p")
+                
+                case "$cmd" in
                     "Quit")
-                        stty "$oldt"
                         exit 0
                         ;;
                     "Fix 'failed to synchronize all databases' for apk")
-                        command+="rm -rf /var/cache/apk/* && apk update'"
+                        command="echo '$root_password' | su -c 'rm -rf /var/cache/apk/* && apk update'"
                         ;;
                     "Fix 'unable to lock database' for apk")
-                        command+="rm -f /var/lib/apk/db/lock'"
+                        command="echo '$root_password' | su -c 'rm -f /var/lib/apk/db/lock'"
                         ;;
                     "Fix clock time")
-                        command+="time_str=\$(curl -sI \"http://google.com\" | grep -i \"^date:\" | cut -d\" \" -f2-) && date -s \"\$time_str\" &>/dev/null && hwclock --systohc &>/dev/null'"
+                        command="echo '$root_password' | su -c 'time_str=\$(curl -sI \"http://google.com\" | grep -i \"^date:\" | cut -d\" \" -f2-) && date -s \"\$time_str\" &>/dev/null && hwclock --systohc &>/dev/null'"
                         ;;
                     "Fix connectivity issues")
-                        command+="apk del networkmanager --force-broken-world && rm -rf /etc/NetworkManager && apk add networkmanager && rc-service networkmanager restart'"
+                        command="echo '$root_password' | su -c 'apk del networkmanager --force-broken-world && rm -rf /etc/NetworkManager && apk add networkmanager && rc-service networkmanager restart'"
                         ;;
                     "Fix corrupted packages")
-                        command+="apk fix'"
+                        command="echo '$root_password' | su -c 'apk fix'"
                         ;;
                     "Fix login issues")
-                        command+="apk add --force linux-firmware linux-firmware-none'"
+                        command="echo '$root_password' | su -c 'apk add --force linux-firmware linux-firmware-none'"
                         ;;
                     "See system logs")
-                        command+="dmesg'"
+                        command="echo '$root_password' | su -c 'dmesg'"
                         ;;
                     "Update system")
-                        command+="apk update && apk upgrade'"
+                        command="echo '$root_password' | su -c 'apk update && apk upgrade'"
                         ;;
                 esac
-
+                
                 execute_command "$command"
                 ;;
         esac
     done
-
-    stty "$oldt"
 }
 
 main
