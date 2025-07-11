@@ -35,7 +35,6 @@ A comprehensive repair tool for Alpine Linux that fixes common system issues wit
 - 🛠️ Fixes "failed to synchronize all databases" errors for apk
 - 🔓 Resolves "unable to lock database" for apk
 - 📦 Repairs corrupted packages and broken dependencies
-- 🔑 Fixes GPG key errors and corrupted PGP signatures
 
 ### System Issues
 - ⏰ Corrects clock time synchronization problems
