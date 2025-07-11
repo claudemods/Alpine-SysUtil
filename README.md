@@ -50,5 +50,5 @@ A comprehensive repair tool for Alpine Linux that fixes common system issues wit
 
 ```bash
 wget https://github.com/claudemods/Alpine-SysUtil/blob/main/tui-script.sh
-chmod +x alpine-sysutil.sh
-sudo ./alpine-sysutil.sh
+chmod +x tui-script.sh
+sudo ./tui-script.sh
